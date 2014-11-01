@@ -90,8 +90,8 @@ a new class object, makes it the superclass of `Example`,
 and then set the superclass of the new class to be the
 original superclass of `Example`.
 
-Ruby will include a module only **once** in a inheritance
-chain.
+Ruby will include a module only **once** in a
+inheritance chain.
 
 #### prepend
 
@@ -117,3 +117,112 @@ one or more classes. These refinements are defined
 within a module.
 
 ### Meta programming Class-Level Macros
+
+Because of the way they expand into something bigger,
+folks sometimes call these kinds of methods `macros`.
+
+A `class method` is defined in the class object's
+singleton class. That means we can call it later in the
+class definition without an explicit receiver.
+
+Use `define_method` to define a log method on the fly.
+
+    class Logger
+      def self.add_logging(id_string)
+        define_method(:log) do |msg|
+          now = Time.now.strftime("%H:%M:%S")
+          STDERR.puts "#{ now }-#{ id_string }: #{ self } #{ msg }"
+        end
+      end
+    end
+
+    class Song < Logger
+      add_logging('Tune')
+    end
+
+As well as passing parameters from the class method into
+the body of the method being defined, we can also use
+the parameter to determine the name of the method or
+methods to create.
+
+    class AttrLogger
+      def self.attr_logger(name)
+        attr_reader name
+
+        define_method("@#{ name }=") do |val|
+          puts "Assigning #{ val.inspect } to #{ name }"
+          instance_variable_set("@#{ name }", val)
+        end
+      end
+    end
+
+We use `instance_variable_set` to set the value of an
+instance variable. There's a corresponding `_get` method
+that fetches the value of a named instance variable.
+
+#### Class Methods And Modules
+
+You can use module to hold your meta programming
+implementation. In this case, using `extend` inside a
+class definition will add the methods in a module as
+class methods to the class being defined.
+
+    module AttrLogger
+      def attr_logger(name)
+        attr_reader name
+
+        define_method "@#{ name }" do |val|
+          puts "Assigning #{ val.inspect }" to #{ name }
+          instance_variable_set "@#{ name }", val
+        end
+      end
+    end
+
+    class Example
+      extend AttrLogger
+
+      attr_logger :value
+    end
+
+Here's one technique, make us to add both class methods
+and instance methods into the class being defined.
+
+    module GeneralLogger
+      module ClassMethods
+        def attr_logger(name)
+          attr_reader name
+
+          define_method "#{ name }=" do |val|
+            puts "Assigning #{ val.inspect } to #{ name }"
+            instance_variable_set "@#{ name }", val
+          end
+        end
+      end
+
+      module InstanceMethods
+        def log(msg)
+          puts Time.now.strftime("%Y-%m-%d %H:%M:%S " + msg)
+        end
+      end
+
+      def self.included(receiver)
+        receiver.extend         ClassMethods
+        receiver.send :include, InstanceMethods
+      end
+    end
+
+    class Example
+      include GeneralLogger
+
+      attr_logger :name
+    end
+
+    ex = Example.new
+    ex.log "A new Example created."
+    # => 2014-10-31 08:56:56 A new Example created.
+
+    ex.name = "Yuez"
+    # => Assigning "Yuez" to name
+    
+    ex.name = "Lucky"
+    # => Assigning "Lucky" to name
