@@ -17,6 +17,7 @@ class and object structure.
 A Ruby object has three components: a set of flags, some
 instance variables, and an associated class.
 
+
 #### self and Method calling
 
 `self` has two significant roles in running Ruby program.
@@ -28,6 +29,7 @@ instance variables, and an associated class.
 
 Inside a class definition, `self` is set to the class
 object of the class being defined.
+
 
 #### Singletons
 
@@ -43,6 +45,7 @@ particular object. These are called `singleton methods`.
 
 When we defined singleton method for the `animal` object，
 Ruby create a new anonymous class and defined the `speak`.
+
 
 #### Singletons and Classes
 
@@ -80,6 +83,7 @@ the subclass that invoke the original method using
 The call of `super` can access the parent's methods
 regardless of its visibility.
 
+
 ### Modules and Mixins
 
 The module that you include is effectively added as a
@@ -93,6 +97,7 @@ original superclass of `Example`.
 Ruby will include a module only **once** in a
 inheritance chain.
 
+
 #### prepend
 
 > New feature in 2.0
@@ -102,11 +107,13 @@ as one in the original class, it will be invoked instead
 of the original. The prepended module can then call the
 original using `super`.
 
+
 #### extend
 
 Add the instance methods to a particular object.If you
 use it in a class definition, the module's methods
 become class methods.
+
 
 #### Refinements
 
@@ -115,6 +122,7 @@ become class methods.
 A refinement is a way of packaging a set of changes to
 one or more classes. These refinements are defined
 within a module.
+
 
 ### Meta programming Class-Level Macros
 
@@ -159,6 +167,7 @@ methods to create.
 We use `instance_variable_set` to set the value of an
 instance variable. There's a corresponding `_get` method
 that fetches the value of a named instance variable.
+
 
 #### Class Methods And Modules
 
@@ -223,6 +232,76 @@ and instance methods into the class being defined.
 
     ex.name = "Yuez"
     # => Assigning "Yuez" to name
-    
+
     ex.name = "Lucky"
     # => Assigning "Lucky" to name
+
+
+#### Creating Singleton Class
+
+Use `Class#new` directly to create a singleton class. By
+default this class will be direct decendent of `Object`.
+You can give them a different parent by passing the
+parent's class as a parameter.
+
+
+### instance_eval and class_eval
+
++ `Object#instance_eval`
++ `Module#class_eval`
++ `Module#module_eval`
+
+`instance_eval` and `class_eval` both set `self` for the
+duration of the block. However, they differ in the way
+they set up the environment for method definition.
+`class_eval` sets things up as if you were in the body
+of a class definition.
+
+In contrast, calling `instance_eval` on a class acts as
+if you were working inside the singleton class of `self`
+
+Ruby has variants of these methods.
+
++ `Object#instance_exec`
++ `Module#class_exec`
++ `Module#module_exec`
+
+behave identically to there `_eval` counterparts but take
+only a block(they do not take a string).
+
+
+### Hook Methods
+
+`included` is an example of a *hood method* (sometime
+  called a *callback*). A hook method is a method that
+  you write but that Ruby calls from within the interpreter
+  when some particular events occurs.
+
+  The interpreter looks for these methods by name--if
+  you define a method in the right context with an
+  appropriate name, Ruby will call it when the corresponding
+  event happens.
+
+  The methods that can be invoked from within the
+  interpreter are:
+
++ Method related hooks.
+
+  `method_added`, `method_missing`,  `method_removed`,
+  `method_undefined`, `singleton_method_added`,
+  `singleton_method_removed`, `singleton_method_undefined`
+
++ Class and module related hooks.
+
+  `append_features`, `const_missing`, `extend_object`,
+  `extended`, `included`, `inherited`,
+  `initialize_clone`, `initialize_coty`,
+  `initialize_dup`
+
++ Object marshaling hooks.
+
+  `marshal_dump`, `marshal_load`
+
++ Coercion hooks.
+
+  `coerce`, `included_from`, `to_xxx`
